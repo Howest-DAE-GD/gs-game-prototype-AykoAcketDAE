@@ -42,7 +42,8 @@ void Enemy::Update(float elapsedSec)
 			{
 				if (utils::IsOverlapping(m_Maze[index][index2], m_Maze[index][index2 + 1], Circlef{ m_Pos.ToPoint2f() ,10 }))
 				{
-					m_Pos -= Direction.Normalized()*200 * elapsedSec;
+					m_Pos -= (Direction.Normalized() - Vector2f{ m_Maze[index][index2]-m_Maze[index][index2 + 1] }.Normalized()) * 300 * elapsedSec;
+					
 
 				}
 				for (int idx{}; idx < m_Bullets.size(); ++idx)
@@ -72,13 +73,30 @@ void Enemy::Draw() const
 void Enemy::PathFinding(float elapsedSec)
 {
 	Direction =  m_PlayerPos- m_Pos;
-
-	m_Pos += Direction.Normalized() * elapsedSec*200;
+	if(utils::IsPointInCircle(m_PlayerPos.ToPoint2f(), Circlef{ m_Pos.ToPoint2f() ,1000 }))
+	{
+		m_Pos += Direction.Normalized() * elapsedSec * 200;
+	}
 }
 
 void Enemy::Collision(Point2f bulletpos)
 {
-	if(utils::IsPointInCircle(bulletpos, Circlef{ m_Pos.ToPoint2f() ,10 })) isAlive = false;
+
+	if(utils::IsPointInCircle(bulletpos, Circlef{ m_Pos.ToPoint2f() ,10 })) 
+	{
+		isAlive = false;
+		isDead = true;
+	}
+}
+
+void Enemy::InterCollision(Vector2f enemyCenter,float elapsedSec)
+{
+	Vector2f collisionDirection{ m_Pos - enemyCenter };
+
+	if (utils::IsOverlapping(Circlef{ enemyCenter.ToPoint2f(),10 }, Circlef{ m_Pos.ToPoint2f() ,10 }))
+	{
+		m_Pos += collisionDirection.Normalized() * elapsedSec * 200;
+	};
 }
 
 void Enemy::GetPlayerLocation(Point2f pos)
@@ -86,3 +104,26 @@ void Enemy::GetPlayerLocation(Point2f pos)
 
 	m_PlayerPos = Vector2f{ -pos.x+450,-pos.y+300 };
 }
+
+Vector2f Enemy::GetEnemyPos()
+{
+	return m_Pos;
+}
+
+bool Enemy::GiveHealth()
+{
+	if (isAlive)
+	{
+		return false;
+	}
+	else if(isDead)
+	{
+		isDead = false;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+

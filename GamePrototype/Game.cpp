@@ -40,12 +40,14 @@ void Game::Initialize( )
 	m_Speed = 250;
 	m_Direction = Vector2f{0,0};
 	m_TimeSinceShoot = 0;
+
 	SVGParser::GetVerticesFromSvgFile("drawing.svg", m_Maze);
-	for (int index{}; index < 50; ++index)
+	for (int index{}; index < 100; ++index)
 	{
-		m_ArrEnemyPtr.push_back(new Enemy{ /*Vector2f{float(rand() % 5000 - 2500) ,float(rand() % 5000 - 2500)}*/Vector2f{200,300},m_Maze,200});
+		m_ArrEnemyPtr.push_back(new Enemy{ Vector2f{float(rand() % 5000 - 2500) ,float(rand() % 5000 - 2500)},m_Maze,200});
 	}
-	
+	m_TimerPtr = new Time();
+	m_Deathscreen = new Texture{ "You Died","Font.ttf",100,Color4f{0.9,0.9,0.9,1} };
 }
 
 void Game::Cleanup( )
@@ -54,28 +56,62 @@ void Game::Cleanup( )
 
 void Game::Update( float elapsedSec )
 {
-	UpdateEnemies(elapsedSec);
-
-	m_DeltaLocation = m_Direction;
-	m_ElapsedSec = elapsedSec;
-	
-	MoveInput();
-	
-	CreateBullet();
-	
-
-	collision();
-
-	for (int index{}; index < m_ArrBulletPtr.size(); ++index)
+	if(m_Health > 0)
 	{
-		m_ArrBulletPtr[index]->Update(elapsedSec);
+		UpdateEnemies(elapsedSec);
 
-		if (m_ArrBulletPtr[index]->GetTime() > m_MaxTimeBullet)
+		m_DeltaLocation = m_Direction;
+		m_ElapsedSec = elapsedSec;
+
+		MoveInput();
+
+		CreateBullet();
+
+
+		collision(elapsedSec);
+
+		for (int index{}; index < m_ArrEnemyPtr.size(); ++index)
 		{
-			m_ArrBulletPtr.erase(m_ArrBulletPtr.begin());
+			for (int index1{}; index1 < m_ArrEnemyPtr.size(); ++index1)
+			{
+				if (index1 != index)
+				{
+					m_ArrEnemyPtr[index]->InterCollision(m_ArrEnemyPtr[index1]->GetEnemyPos(), elapsedSec);
+				}
+			}
+			if (m_ArrEnemyPtr[index]->GiveHealth())
+			{
+				m_Health = m_Health + 1;
+				if (m_Health > 100.f) m_Health = 100.f;
+			}
 		}
+		
+		for (int index{}; index < m_ArrBulletPtr.size(); ++index)
+		{
+			m_ArrBulletPtr[index]->Update(elapsedSec);
+
+			if (m_ArrBulletPtr[index]->GetTime() > m_MaxTimeBullet)
+			{
+				m_ArrBulletPtr.erase(m_ArrBulletPtr.begin());
+			}
+		}
+		m_TimeSinceShoot += elapsedSec;
+		if (m_IsHit)
+		{
+			m_HitTime += elapsedSec;
+			if (m_HitTime > 1.f)
+			{
+				m_IsHit = false;
+				m_HitTime = 0;
+			}
+		}
+		m_Time += elapsedSec;
+		if (int(m_Time * 1000.f) % 3000 <= 10)
+			m_Health -= 2;
+
+		m_TimerPtr->Update(elapsedSec);
 	}
-	m_TimeSinceShoot += elapsedSec;
+	
 }
 
 void Game::Draw( ) const 
@@ -105,7 +141,14 @@ void Game::Draw( ) const
 
 	utils::SetColor(Color4f{ 0,1,0,1 });
 	utils::FillEllipse(Point2f{450,300},10,10);
-	
+
+	DrawHealth();
+	m_TimerPtr->Draw();
+
+	if (m_Health <= 0)
+	{
+		m_Deathscreen->Draw(Point2f{200,250});
+	}
 }
 
 void Game::ProcessKeyDownEvent( const SDL_KeyboardEvent & e )
@@ -183,7 +226,7 @@ void Game::MoveInput()
 	m_Player = Circlef(Point2f{ -m_Direction.x+450,-m_Direction.y+300 }, 10);
 }
 
-void Game::collision()
+void Game::collision(float elapsedSec)
 {
 	for (int index{}; index < m_Maze.size(); ++index)
 	{
@@ -200,11 +243,20 @@ void Game::collision()
 				{
 					m_ArrBulletPtr.erase(m_ArrBulletPtr.begin());
 				}
-
 			}
 		}
 		
 	}
+	for (int idx{}; idx < m_ArrEnemyPtr.size(); ++idx)
+	{
+		if (utils::IsOverlapping(Circlef{ m_ArrEnemyPtr[idx]->GetEnemyPos().ToPoint2f(),10 }, m_Player)and !m_IsHit)
+		{
+			m_Health -= 10.f;
+			m_IsHit = true;
+		};
+		
+	}
+	
 }
 void Game::DrawEnemies() const
 {
@@ -236,4 +288,12 @@ void Game::CreateBullet()
 		m_ArrBulletPtr.push_back(new Bullet{ m_MousePos,Vector2f{-m_Direction.x+450,-m_Direction.y+300},600.f });
 		m_TimeSinceShoot = 0;
 	}
+}
+
+void Game::DrawHealth() const
+{
+	utils::SetColor(Color4f{ 1,0,0,1 });
+	utils::FillRect(Rectf{ 100,550,700,25 });
+	utils::SetColor(Color4f{ 0,1,0,1 });
+	utils::FillRect(Rectf{ 100,550,700 * (m_Health / 100.f),25 });
 }

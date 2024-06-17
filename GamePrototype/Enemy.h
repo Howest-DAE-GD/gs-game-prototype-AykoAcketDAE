@@ -15,9 +15,11 @@ public:
 
 	void PathFinding(float elapsedSec);
 	void Collision(Point2f bulletpos);
-
+	void InterCollision(Vector2f enemyCenter, float elapsedSec);
 	void GetPlayerLocation(Point2f pos);
 
+	Vector2f GetEnemyPos();
+	bool GiveHealth();
 
 	std::vector<std::vector<Point2f>> m_Maze{};
 	std::vector<Bullet*> m_Bullets{};
@@ -27,9 +29,9 @@ public:
 	Vector2f m_DeltaLocation{};
 	Vector2f Direction{};
 	float m_BulletTimer{};
+
 	// raycast detection
 	bool isAlive{ true };
-
-
+	bool isDead{false};
 };
 

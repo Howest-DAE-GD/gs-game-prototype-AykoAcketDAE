@@ -4,6 +4,7 @@
 #include "vector"
 #include "Bullet.h"
 #include "Enemy.h"
+#include "Time.h"
 
 class Game : public BaseGame
 {
@@ -35,6 +36,14 @@ private:
 	float m_ElapsedSec;
 	Circlef m_Player;
 
+
+	float m_Health{ 100 };
+	bool m_IsHit{false};
+	float m_HitTime{ 0 };
+	float m_Time{0};
+
+	Time* m_TimerPtr{};
+
 	std::vector<Bullet*> m_ArrBulletPtr;
 	const float m_MaxTimeBullet{ 0.5f };
 	float m_TimeSinceShoot;
@@ -44,18 +53,21 @@ private:
 
 	int m_AmountEnemies;
 	std::vector<std::vector<Point2f>> m_Maze;
+
+	Texture* m_Deathscreen;
 	// FUNCTIONS
 	void Initialize();
 	void Cleanup( );
 	void ClearBackground( ) const;
 
 	void MoveInput();
-	void collision();
+	void collision(float elapsedSec);
 	void DrawEnemies() const;
 	void UpdateEnemies(float elapsedSec);
 
 	void CreateBullet();
 
+	void DrawHealth() const;
 
 
 };
