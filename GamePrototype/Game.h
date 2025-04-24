@@ -5,6 +5,7 @@
 #include "Bullet.h"
 #include "Enemy.h"
 #include "Time.h"
+#include "Wave.h"
 
 class Game : public BaseGame
 {
@@ -55,6 +56,8 @@ private:
 	std::vector<std::vector<Point2f>> m_Maze;
 
 	Texture* m_Deathscreen;
+
+	Wave* m_Wave;
 	// FUNCTIONS
 	void Initialize();
 	void Cleanup( );

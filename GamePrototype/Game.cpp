@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "Game.h"
-#include <iostream>
-#include "utils.h"
 #include "SVGParser.h"
+#include "utils.h"
+#include <iostream>
 
 /*
-imposter | consumption
+recursion | losing
 */
 
 
@@ -34,17 +34,19 @@ Game::~Game( )
 void Game::Initialize( )
 	
 {
+	std::cout << ((rand() % 50) / 100.f) + 1.f;
 
 	m_PlayerLocation = Vector2f{ GetViewPort().width / 2,GetViewPort().height / 2 };
 	m_Player = Circlef(Point2f{ m_Direction.ToPoint2f()}, 10);
 	m_Speed = 250;
 	m_Direction = Vector2f{0,0};
 	m_TimeSinceShoot = 0;
-
+	m_Wave = new Wave{};
+	
 	SVGParser::GetVerticesFromSvgFile("drawing.svg", m_Maze);
-	for (int index{}; index < 100; ++index)
+	for (int index{}; index < m_Wave->SetSpawnCount(); ++index)
 	{
-		m_ArrEnemyPtr.push_back(new Enemy{ Vector2f{float(rand() % 5000 - 2500) ,float(rand() % 5000 - 2500)},m_Maze,200});
+		m_ArrEnemyPtr.push_back(new Enemy{ Vector2f{float(rand() % 2000 - 1000) ,float(rand() % 2000 - 1000)},m_Maze,5000, ((rand() % 50)/100.f)+1.f });
 	}
 	m_TimerPtr = new Time();
 	m_Deathscreen = new Texture{ "You Died","Font.ttf",100,Color4f{0.9,0.9,0.9,1} };
@@ -65,7 +67,7 @@ void Game::Update( float elapsedSec )
 
 		MoveInput();
 
-		CreateBullet();
+		
 
 
 		collision(elapsedSec);
@@ -78,11 +80,6 @@ void Game::Update( float elapsedSec )
 				{
 					m_ArrEnemyPtr[index]->InterCollision(m_ArrEnemyPtr[index1]->GetEnemyPos(), elapsedSec);
 				}
-			}
-			if (m_ArrEnemyPtr[index]->GiveHealth())
-			{
-				m_Health = m_Health + 1;
-				if (m_Health > 100.f) m_Health = 100.f;
 			}
 		}
 		
@@ -106,8 +103,7 @@ void Game::Update( float elapsedSec )
 			}
 		}
 		m_Time += elapsedSec;
-		if (int(m_Time * 1000.f) % 3000 <= 10)
-			m_Health -= 2;
+	
 
 		m_TimerPtr->Update(elapsedSec);
 	}
@@ -139,12 +135,12 @@ void Game::Draw( ) const
 	}
 	glPopMatrix();
 
-	utils::SetColor(Color4f{ 0,1,0,1 });
+	utils::SetColor(Color4f{ 0,0,1,1 });
 	utils::FillEllipse(Point2f{450,300},10,10);
 
 	DrawHealth();
 	m_TimerPtr->Draw();
-
+	m_Wave->Draw();
 	if (m_Health <= 0)
 	{
 		m_Deathscreen->Draw(Point2f{200,250});
@@ -170,19 +166,14 @@ void Game::ProcessMouseMotionEvent( const SDL_MouseMotionEvent& e )
 
 void Game::ProcessMouseDownEvent( const SDL_MouseButtonEvent& e )
 {
-	//std::cout << "MOUSEBUTTONDOWN event: ";
-	//switch ( e.button )
-	//{
-	//case SDL_BUTTON_LEFT:
-	//	std::cout << " left button " << std::endl;
-	//	break;
-	//case SDL_BUTTON_RIGHT:
-	//	std::cout << " right button " << std::endl;
-	//	break;
-	//case SDL_BUTTON_MIDDLE:
-	//	std::cout << " middle button " << std::endl;
-	//	break;
-	//}
+	
+	switch ( e.button )
+	{
+	case SDL_BUTTON_LEFT:
+		CreateBullet();
+		break;
+	
+	}
 	
 }
 
@@ -267,22 +258,48 @@ void Game::DrawEnemies() const
 }
 void Game::UpdateEnemies(float elapsedSec)
 {
+	std::cout << "enemy count: " << m_ArrEnemyPtr.size() << std::endl;
+
+	if (m_ArrEnemyPtr.size() == 0)
+	{
+
+		m_Wave->Update(elapsedSec);
+		//if (m_Wave->GetWaveCount() % 5 == 0 and m_Wave->GetWaveCount() != 0)
+		
+		for (int index{}; index < m_Wave->SetSpawnCount(); ++index)
+		{
+			m_ArrEnemyPtr.push_back(new Enemy{ Vector2f{float(rand() % 2000 - 1000) ,float(rand() % 2000 - 1000)},m_Maze,500, ((rand() % 50) / 100.f) + 1.f });
+		}
+		m_Health = int(m_Health + 50);
+		if (m_Health >= 100) m_Health = 100;
+	}
+	
+	
 	for (int index{}; index < m_ArrEnemyPtr.size(); ++index)
 	{
 		m_ArrEnemyPtr[index]->Update(elapsedSec);
 		for (int idx{}; idx < m_ArrBulletPtr.size(); ++idx)
 		{
-			m_ArrEnemyPtr[index]->Collision(m_ArrBulletPtr[idx]->GetPos());
+			if(m_ArrEnemyPtr[index]->Collision(m_ArrBulletPtr[idx]->GetPos()))
+			{
+				m_ArrEnemyPtr[index] = m_ArrEnemyPtr[m_ArrEnemyPtr.size() - 1];
+				m_ArrEnemyPtr.resize(m_ArrEnemyPtr.size() - 1);
+				index = 0;
+				m_Wave->GetScore();
+			}
+
+			
 		}
+		if (m_ArrEnemyPtr.empty()) break;
 		m_ArrEnemyPtr[index]->GetPlayerLocation(m_Direction.ToPoint2f());
 	}
 }
 void Game::CreateBullet()
 {
-	const Uint8* pStates = SDL_GetKeyboardState(nullptr);
-	const bool SpaceBar { bool(pStates[SDL_SCANCODE_SPACE]) };
+	//const Uint8* pStates = SDL_GetKeyboardState(nullptr);
+	//const bool SpaceBar { bool(pStates[SDL_Sca]) };
 
-	if (SpaceBar and m_TimeSinceShoot > 1.f)
+	if (m_TimeSinceShoot > 1.f)
 	{
 	//	std::cout << "Space\n";
 		m_ArrBulletPtr.push_back(new Bullet{ m_MousePos,Vector2f{-m_Direction.x+450,-m_Direction.y+300},600.f });

@@ -1,4 +1,4 @@
-#pragma once
+a#pragma once
 #include "structs.h"
 #include "SDL.h"
 // https://BaseGameprogrammingpatterns.com/subclass-sandbox.html

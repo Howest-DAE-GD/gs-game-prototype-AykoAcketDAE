@@ -28,6 +28,7 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="Vector2f.cpp" />
+    <ClCompile Include="Wave.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseGame.h" />
@@ -41,6 +42,7 @@
     <ClInclude Include="Transform.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="Vector2f.h" />
+    <ClInclude Include="Wave.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

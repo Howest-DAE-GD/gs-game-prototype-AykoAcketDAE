@@ -7,19 +7,20 @@
 class Enemy
 {
 public:
-	Enemy(Vector2f pos ,std::vector<std::vector<Point2f>> walls,float range);
-	~Enemy();
+	Enemy(Vector2f pos ,std::vector<std::vector<Point2f>> walls,float range,float speedMod);
+	Enemy(const Enemy& rhs) ;
+	Enemy& operator=(const Enemy& rhs);
 
 	void Update(float elapsedSec);
 	void Draw() const;
 
 	void PathFinding(float elapsedSec);
-	void Collision(Point2f bulletpos);
+	bool Collision(Point2f bulletpos);
 	void InterCollision(Vector2f enemyCenter, float elapsedSec);
 	void GetPlayerLocation(Point2f pos);
 
 	Vector2f GetEnemyPos();
-	bool GiveHealth();
+	
 
 	std::vector<std::vector<Point2f>> m_Maze{};
 	std::vector<Bullet*> m_Bullets{};
@@ -33,5 +34,6 @@ public:
 	// raycast detection
 	bool isAlive{ true };
 	bool isDead{false};
+	float m_IsFast{0};
 };
 
